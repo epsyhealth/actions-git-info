@@ -5,6 +5,8 @@ import click
 from git import Repo, BadName
 from github import Github, UnknownObjectException
 
+client = Github(os.getenv("GITHUB_TOKEN"))
+
 
 def get_pr_info(pr_url):
     if not pr_url:
@@ -12,8 +14,6 @@ def get_pr_info(pr_url):
 
     regex = r"https://(api\.|)github\.com/(repos\/|)(?P<repo>.*?)/pulls?/(?P<pull_id>\d+)"
     matches = re.match(regex, pr_url)
-
-    client = Github(os.getenv("GITHUB_TOKEN"))
 
     try:
         matches = matches.groupdict()
@@ -39,11 +39,24 @@ def get_git_info(work_dir, variables):
     repo = Repo(work_dir)
 
     current_commit_tag = next(filter(lambda x: x.commit == repo.head.commit, repo.tags), "")
-
-    previous_tag = ""
+    previous_tag = None
     tags = list(filter(lambda x: x.commit != repo.head.commit, repo.tags))
     if len(tags) > 2:
         previous_tag = tags[-1]
+
+    # check deployments if there is no tag
+    previous_deployment_sha = None
+    remote_repo = client.get_repo(os.getenv("GITHUB_REPOSITORY"))
+    deployments = remote_repo.get_deployments(environment=os.getenv("STAGE"))
+    deployments = deployments[:10]  # limit to last 10 deployments
+    for i in deployments:
+        for x in remote_repo.get_deployment(i.id).get_statuses():
+            if remote_repo.get_deployment(i.id).get_status(x.id).state == "success" and not previous_deployment_sha:
+                previous_deployment_sha = remote_repo.get_deployment(i.id).sha
+    # We didn't find any deployments or there is none? use first git commit instead!
+    if previous_deployment_sha is None:
+        commits_in_master = repo.iter_commits(rev=repo.branches.master)
+        previous_deployment_sha = list(commits_in_master)[-1].hexsha
 
     if "head_branch" in variables:
         deployment_ref = variables.get("head_branch")
@@ -57,6 +70,7 @@ def get_git_info(work_dir, variables):
         current_commit_tag=current_commit_tag,
         previous_tag=str(previous_tag),
         previous_tag_sha=str(previous_tag.tag) if previous_tag else "",
+        previous_deployment_sha=str(previous_deployment_sha),
     )
 
 
