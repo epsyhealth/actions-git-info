@@ -1,15 +1,15 @@
 FROM python:3-slim
 
-RUN pip install poetry
+RUN pip install poetry --no-cache-dir
 
 WORKDIR /src
 
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+RUN apt update && apt install --no-install-recommends -y git && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 COPY . /src
 
 RUN poetry build -f wheel \
-  && pip install ./dist/git_info-*-py3-none-any.whl
+  && pip install ./dist/git_info-*-py3-none-any.whl --no-cache-dir
 
 COPY entrypoint.sh /entrypoint.sh
 
