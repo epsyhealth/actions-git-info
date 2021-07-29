@@ -136,11 +136,13 @@ def last_commit(debug, days):
     token = os.getenv('GITHUB_TOKEN')
     repo_name = os.getenv("GITHUB_REPOSITORY")
     ref = os.getenv("GITHUB_REF")
-    r = requests.get(f"https://api.github.com/repos/{repo_name}/commits?ref={ref}&per_page=1", headers={"Authorization": f"bearer {token}"})
+    r = requests.get(f"https://api.github.com/repos/{repo_name}/commits?sha={ref}&per_page=1", headers={"Authorization": f"bearer {token}"})
     r.raise_for_status()
     commit_date = arrow.get(r.json()[0]['commit']['author']['date'])
     diff = arrow.utcnow() - commit_date
     if debug:
+        click.secho(f"ref::{ref}", fg="green")
+        click.secho(f"last_commit_date::{commit_date}", fg="green")
         click.secho(f"last_commit::{diff.days <= days}", fg="green")
     click.echo(f"::set-output name=last_commit::{diff.days <= days}")
 
