@@ -3,6 +3,7 @@ import re
 
 import click
 import requests
+import arrow
 from git import Repo, BadName
 from github import Github, UnknownObjectException
 
@@ -124,6 +125,24 @@ def has_changes(work_dir, debug):
         click.secho(f"has_changes::{repo.is_dirty()}", fg="green")
     click.echo(f"::set-output name=has_changes::{'true' if repo.is_dirty() else 'false'}")
 
+
+@run.command(name="last-commit")
+@click.option("--days", default=os.getenv("LAST_COMMIT_DAYS", 10), required=True, type=int)
+@click.option("--debug", is_flag=True)
+def last_commit(debug, days):
+    """
+    Checks remotely if any commit has been pushed in last X days (default: 10)
+    """
+    token = os.getenv('GITHUB_TOKEN')
+    repo_name = os.getenv("GITHUB_REPOSITORY")
+    ref = os.getenv("GITHUB_REF")
+    r = requests.get(f"https://api.github.com/repos/{repo_name}/commits?ref={ref}&per_page=1", headers={"Authorization": f"bearer {token}"})
+    r.raise_for_status()
+    commit_date = arrow.get(r.json()[0]['commit']['author']['date'])
+    diff = arrow.utcnow() - commit_date
+    if debug:
+        click.secho(f"last_commit::{diff.days <= days}", fg="green")
+    click.echo(f"::set-output name=last_commit::{diff.days <= days}")
 
 @run.command(name="is-behind")
 @click.option("--pr", default=os.getenv("GITHUB_PR_URL"), required=True)
