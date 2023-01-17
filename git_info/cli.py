@@ -121,7 +121,7 @@ def info(pr, debug, work_dir):
             click.secho(f"{k}::{v}", fg="green")
 
         click.echo(
-            f"::set-output name={k}::{v if type(v) != bool else str(v).lower()}"
+            f"{k}={v if type(v) != bool else str(v).lower()} >> $GITHUB_OUTPUT"
         )
 
 
@@ -133,7 +133,7 @@ def has_changes(work_dir, debug):
     if debug:
         click.secho(f"has_changes::{repo.is_dirty()}", fg="green")
     click.echo(
-        f"::set-output name=has_changes::{'true' if repo.is_dirty() else 'false'}"
+        f"has_changes={'true' if repo.is_dirty() else 'false'} >> $GITHUB_OUTPUT"
     )
 
 
@@ -163,7 +163,7 @@ def last_commit(debug, days):
         click.secho(f"ref::{ref}", fg="green")
         click.secho(f"last_commit_date::{commit_date}", fg="green")
         click.secho(f"last_commit::{diff.days <= days}", fg="green")
-    click.echo(f"::set-output name=last_commit::{diff.days <= days}")
+    click.echo(f"last_commit={diff.days <= days} >> $GITHUB_OUTPUT")
 
 
 @run.command(name="is-behind")
@@ -187,4 +187,4 @@ def is_behind(pr, work_dir, debug):
     except BadName as e:
         pass
 
-    click.echo(f"::set-output name=is_behind::{str(is_behind).lower()}")
+    click.echo(f"is_behind={str(is_behind).lower()} >> $GITHUB_OUTPUT")
