@@ -10,6 +10,6 @@ inputs:
     default: ''
 runs:
   using: 'docker'
-  image: 'docker://epsyhealth/actions-git-info'
+  image: 'docker://epsyhealth/actions-git-info@test'
   args:
     - ${{ inputs.args }}
